@@ -135,6 +135,7 @@ def main_training_loop():
                     episode_reward += 1
                 elif reward < 0:
                     reward_tensor = torch.tensor([-1])
+                    episode_reward += -1
                 else:
                     reward_tensor = torch.tensor([0])
 
