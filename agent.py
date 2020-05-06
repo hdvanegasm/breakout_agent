@@ -58,10 +58,6 @@ def optimize_model(target_nn, policy_nn, memory, optimizer):
 
     optimizer.zero_grad()
     loss.backward()
-
-    for param in policy_nn.parameters():
-        param.grad.data.clamp_(-5, 5)
-
     optimizer.step()
 
 
@@ -124,23 +120,10 @@ def main_training_loop():
                 action = select_action(state, policy_net, steps_done, env)
                 _, reward, done, info = env.step(action)
                 episode_score += reward
+                episode_reward += reward
+                reward_tensor = torch.tensor([reward])
 
-                reward_tensor = None
-
-                if info["ale.lives"] < prev_state_lives:
-                    reward_tensor = torch.tensor([-1])
-                    episode_reward += -1
-                elif reward > 0:
-                    reward_tensor = torch.tensor([1])
-                    episode_reward += 1
-                elif reward < 0:
-                    reward_tensor = torch.tensor([-1])
-                    episode_reward += -1
-                else:
-                    reward_tensor = torch.tensor([0])
-
-                prev_state_lives = info["ale.lives"]
-
+                # Computes current state
                 screen_grayscale = get_screen(env)
                 cumulative_screenshot.append(screen_grayscale)
                 cumulative_screenshot.pop(0)  # Deletes the first element of the list to save memory space
@@ -152,6 +135,7 @@ def main_training_loop():
 
                 replay_memory.push(state, action, next_state, reward_tensor)
 
+                # Updates state
                 state = next_state
 
                 optimize_model(target_net, policy_net, replay_memory, optimizer)

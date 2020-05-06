@@ -101,12 +101,7 @@ def test_agent(target_nn, fixed_states):
 
             reward_tensor = None
 
-            if info["ale.lives"] < prev_state_lives:
-                sum_reward_episode += -1
-            elif reward < 0:
-                sum_reward_episode += -1
-            elif reward > 0:
-                sum_reward_episode += 1
+            sum_reward_episode = reward
 
             prev_state_lives = info["ale.lives"]
 
