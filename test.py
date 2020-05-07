@@ -25,11 +25,10 @@ def get_fixed_states():
         screen_grayscale_state = get_screen(env)
         cumul_screenshot.append(screen_grayscale_state)
 
-
     prepare_cumulative_screenshot(cumulative_screenshot)
     env.reset()
 
-    for steps in range(constants.N_STEPS_FIXED_STATES):
+    for steps in range(constants.N_STEPS_FIXED_STATES + 8):
         if constants.SHOW_SCREEN:
             env.render()
 
@@ -45,7 +44,8 @@ def get_fixed_states():
         cumulative_screenshot.pop(0)
         state = utils.process_state(cumulative_screenshot)
 
-        fixed_states.append(state)
+        if steps >= 8:
+            fixed_states.append(state)
 
     env.close()
     return fixed_states
@@ -101,7 +101,12 @@ def test_agent(target_nn, fixed_states):
 
             reward_tensor = None
 
-            sum_reward_episode = reward
+            if info["ale.lives"] < prev_state_lives:
+                sum_reward_episode += -1
+            elif reward < 0:
+                sum_reward_episode += -1
+            elif reward > 0:
+                sum_reward_episode += 1
 
             prev_state_lives = info["ale.lives"]
 
@@ -114,7 +119,8 @@ def test_agent(target_nn, fixed_states):
             else:
                 next_state = utils.process_state(cumulative_screenshot)
 
-            state = next_state
+            if next_state is not None:
+                state.copy_(next_state)
             steps += 1
             done_last_episode = done
 
@@ -136,6 +142,6 @@ def test_agent(target_nn, fixed_states):
     # Compute Q-values
     sum_q_values = 0
     for state in fixed_states:
-        sum_q_values += target_nn(state).max(1)[1]
+        sum_q_values += target_nn(state).max(1)[0]
 
     return sum_reward / n_episodes, sum_score / n_episodes, n_episodes, sum_q_values.item() / len(fixed_states)
